@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データ — KODOMO WORLD</title>
+<link rel="stylesheet" href="styles.css?v=10">
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">← 世界にもどる</a>
+  <h1>データ</h1>
+  <span class="tag">バックアップの書き出しと読み込み</span>
+</header>
+
+<div class="addwrap">
+  <section class="panel">
+    <h2>いま入っているもの</h2>
+    <div class="body">
+      <div class="sum" id="sum">読み込み中…</div>
+      <p class="hint">作品はこのブラウザの中だけに保存されています。ブラウザのサイトデータを消すと作品も消えます。別の端末では見られません。定期的に書き出してください。</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>書き出す</h2>
+    <div class="body">
+      <p class="hint">作品の写真（原本・表示用・切り抜き）とこどもの情報を、ひとつのZIPにまとめます。中身はふつうの画像ファイルなので、アプリが無くてもFinderで開けます。</p>
+      <button class="btn" id="btnExport">💾 バックアップを書き出す</button>
+      <div class="hint" id="exportNote"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>読み込む</h2>
+    <div class="body">
+      <div id="drop"><span class="big">📦</span>バックアップのZIPを選ぶ<br><span style="font-size:11px">クリック / ドラッグ＆ドロップ</span></div>
+      <input type="file" id="file" accept=".zip,application/zip" hidden>
+      <div id="picked" hidden>
+        <div class="sum" id="pickedSum"></div>
+        <label class="check"><input type="checkbox" id="replace"> いまのデータを全部消してから読み込む</label>
+        <div class="hint" id="replaceNote">ふだんはチェック不要です。同じ作品（同じid）は二重に増えません。</div>
+        <button class="btn" id="btnImport">この内容を読み込む</button>
+        <button class="btn ghost" id="btnCancel">やめる</button>
+      </div>
+      <div class="hint" id="importNote"></div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script src="zip.js?v=10"></script>
+<script src="core.js?v=10"></script>
+<script src="backup.js?v=10"></script>
+<script src="data.js?v=10"></script>
+</body>
+</html>

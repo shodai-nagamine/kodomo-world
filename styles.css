@@ -23,6 +23,14 @@ header h1{margin:0;font-size:17px;letter-spacing:.04em}
 header .tag{font-size:12px;color:var(--ink-soft)}
 header .stat{margin-left:auto;font-size:12px;color:var(--ink-soft)}
 
+header .sublink{
+  margin-left:auto;color:var(--ink-soft);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:999px;
+}
+header .sublink:hover{background:#fff;color:var(--accent)}
+header .sublink + .cta{margin-left:8px}
+.sum{background:#fffaf4;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7}
+#picked{margin-top:12px}
+#picked .btn{margin-top:10px}
 header .cta{
   margin-left:auto;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;font-size:13px;
   padding:7px 16px;border-radius:999px;box-shadow:0 2px 0 #d9702c;white-space:nowrap;
