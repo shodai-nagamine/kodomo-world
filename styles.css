@@ -23,9 +23,21 @@ header h1{margin:0;font-size:17px;letter-spacing:.04em}
 header .tag{font-size:12px;color:var(--ink-soft)}
 header .stat{margin-left:auto;font-size:12px;color:var(--ink-soft)}
 
+header .cta{
+  margin-left:auto;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;font-size:13px;
+  padding:7px 16px;border-radius:999px;box-shadow:0 2px 0 #d9702c;white-space:nowrap;
+}
+header .stat + .cta{margin-left:14px}
+header .cta:hover{filter:brightness(1.05)}
+header .back{
+  color:var(--ink-soft);text-decoration:none;font-size:13px;padding:4px 10px;border:1px solid var(--line);
+  border-radius:999px;background:#fff;white-space:nowrap;
+}
+header .back:hover{border-color:var(--accent);color:var(--accent)}
+
 /* layout */
 .layout{
-  display:grid;grid-template-columns:288px minmax(0,1fr) 300px;gap:14px;
+  display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;
   padding:14px;align-items:start;
   height:calc(100vh - 50px);
 }
@@ -66,6 +78,24 @@ textarea{resize:vertical;min-height:62px}
 .btn:disabled{background:#e6ddd2;box-shadow:0 2px 0 #d8cec1;cursor:not-allowed}
 .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:600}
 .btn.sub{background:var(--green);box-shadow:0 2px 0 #4a9c62}
+
+/* 追加ページ */
+.addwrap{
+  max-width:600px;margin:0 auto;padding:16px 14px 40px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.addwrap .panel{height:auto}
+.addwrap .body{overflow:visible}
+#done{padding:4px 0}
+.done-card{text-align:center}
+.done-card img{max-width:100%;max-height:220px;border-radius:12px;border:1px solid var(--line);background:#f8f3ec}
+.done-title{font-size:18px;font-weight:800;margin:10px 0 2px}
+.done-meta{font-size:12px;color:var(--ink-soft);margin-bottom:4px}
+.done-card .btn{display:block;text-align:center;text-decoration:none}
+#worldEmpty .cta{
+  pointer-events:auto;margin-top:10px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;
+  font-size:13px;padding:8px 18px;border-radius:999px;box-shadow:0 2px 0 #d9702c;
+}
 
 /* 追加フォームの段 */
 .step{
@@ -192,6 +222,14 @@ textarea{resize:vertical;min-height:62px}
 
 @media (max-width:1000px){
   .layout{grid-template-columns:1fr;height:auto}
+  header .cta{margin-left:0}
+  /* タブは折り返さず横スクロール。折り返すと「作品世界」が2行になって崩れる */
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{white-space:nowrap;flex:none}
+  #worldName{display:none}
+  /* 操作の案内は画面幅に収める */
+  #worldHint{white-space:normal;max-width:88%;text-align:center;line-height:1.4;bottom:8px}
   .panel{height:auto;max-height:none}
   /* flex:1 の basis(0%) が height に勝ってしまうので、ここでは伸縮を止める */
   #view-world{flex:none;height:60vh;min-height:340px}

@@ -513,10 +513,10 @@ function createWorld(container, hooks){
       // 島だけの大きさに合わせた寄りすぎのカメラのままになる
       if (firstSync && items.length){
         radius = targetRadius;                 // 起動直後に島が育つアニメは見せない
-        cam.dist = targetRadius * 1.8;
+        cam.dist = targetRadius * 1.55;
         firstSync = false;
       } else if (cam.dist > targetRadius * 4.2 || cam.dist < targetRadius * .8){
-        cam.dist = targetRadius * 2.1;
+        cam.dist = targetRadius * 1.9;
       }
       return { tier, prevTier, radius: targetRadius, count: items.length };
     },
