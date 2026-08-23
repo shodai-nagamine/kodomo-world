@@ -1,0 +1,125 @@
+/* ============================================================
+ * KODOMO WORLD - gallery.css
+ * gallery.js が描画するギャラリー表示のスタイル。
+ * 既存 styles.css のデザイントークン（--paper --ink --ink-soft --line
+ * --accent --accent-soft --green --card --shadow --radius）を利用する。
+ * クラス名はすべて kwg- 接頭辞。
+ * ============================================================ */
+
+.kwg-root{
+  display:flex;flex-direction:column;gap:12px;
+  height:100%;min-width:0;
+}
+
+/* ---------------- ツールバー ---------------- */
+.kwg-toolbar{
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;
+  padding:0 2px;flex:none;
+}
+
+.kwg-seg{
+  display:flex;gap:4px;padding:3px;background:#fffaf4;
+  border:1px solid var(--line);border-radius:999px;flex:none;
+}
+.kwg-seg-btn{
+  border:none;background:transparent;color:var(--ink-soft);
+  padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;
+  white-space:nowrap;
+}
+.kwg-seg-btn.kwg-on{background:var(--accent-soft);color:#b4571c}
+.kwg-seg-btn:hover:not(.kwg-on){color:var(--ink)}
+
+.kwg-field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.kwg-field-label{font-size:10px;color:var(--ink-soft);letter-spacing:.04em}
+.kwg-select{
+  padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;
+  color:var(--ink);font-size:12px;max-width:160px;
+}
+.kwg-select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+
+.kwg-count{
+  margin-left:auto;font-size:12px;color:var(--ink-soft);
+  align-self:center;white-space:nowrap;padding-top:14px;
+}
+
+/* ---------------- コンテンツ領域 ---------------- */
+.kwg-content{flex:1;min-height:0;overflow:auto}
+
+/* ---------------- 空状態 ---------------- */
+.kwg-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;padding:48px 16px;color:var(--ink-soft);text-align:center;
+}
+.kwg-empty-big{font-size:34px}
+.kwg-empty-msg{font-size:13px}
+
+/* ---------------- ギャラリーモード ---------------- */
+.kwg-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:14px;padding:2px;
+}
+.kwg-card{
+  display:flex;flex-direction:column;text-align:left;padding:0;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s;
+  min-width:0;
+}
+.kwg-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.kwg-card.kwg-sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+.kwg-thumb{
+  width:100%;aspect-ratio:4/3;background:#f5efe6;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;
+}
+.kwg-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.kwg-noimg{font-size:26px;opacity:.5}
+
+.kwg-card-body{padding:9px 10px 10px;min-width:0}
+.kwg-title{
+  font-weight:700;font-size:13px;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kwg-meta-line{
+  margin-top:2px;font-size:11px;color:var(--ink-soft);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kwg-meta-line .kwg-dot{margin:0 1px}
+.kwg-date{margin-top:1px;font-size:11px;color:var(--ink-soft)}
+
+/* ---------------- リストモード ---------------- */
+.kwg-list{display:flex;flex-direction:column;gap:2px;padding:2px}
+.kwg-row{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:5px 8px;border:1px solid transparent;border-radius:9px;
+  background:transparent;cursor:pointer;text-align:left;min-width:0;
+}
+.kwg-row:hover{background:#fff6ec}
+.kwg-row.kwg-sel{background:var(--accent-soft);border-color:#f7d3b6}
+
+.kwg-row-thumb{
+  width:36px;height:36px;border-radius:7px;background:#f5efe6;
+  border:1px solid var(--line);overflow:hidden;flex:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.kwg-row-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.kwg-row-thumb .kwg-noimg{font-size:15px}
+
+.kwg-row-title{
+  font-weight:700;font-size:12.5px;color:var(--ink);flex:1 1 140px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kwg-row-author{
+  font-size:11.5px;color:var(--ink-soft);flex:0 1 110px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kwg-row-age{font-size:11.5px;color:var(--ink-soft);flex:none;width:64px}
+.kwg-row-date{font-size:11.5px;color:var(--ink-soft);flex:none;width:80px;text-align:right}
+
+/* ---------------- レスポンシブ ---------------- */
+@media (max-width:480px){
+  .kwg-toolbar{gap:8px 10px}
+  .kwg-count{padding-top:0;margin-left:0;flex-basis:100%;text-align:right}
+  .kwg-grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+  .kwg-row-author{display:none}
+  .kwg-row-date{width:auto}
+}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌱 KODOMO WORLD</title>
+<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="gallery.css?v=5">
+</head>
+<body>
+<header>
+  <h1>🌱 KODOMO WORLD</h1>
+  <span class="tag">子どもの作品が住み続ける世界</span>
+  <span class="stat" id="stat"></span>
+</header>
+
+<div class="layout">
+  <!-- 左：作品を追加 -->
+  <aside class="panel">
+    <h2>作品を追加</h2>
+    <div class="body">
+      <form id="form">
+        <div class="step">1. 作品の写真</div>
+        <div id="drop"><span class="big">🖼️</span>作品の写真を選ぶ<br><span style="font-size:11px">クリック / ドラッグ＆ドロップ</span></div>
+        <input type="file" id="file" accept="image/*" hidden>
+        <div id="preview"><img id="prevImg" alt=""><div class="name" id="prevName"></div></div>
+
+        <div id="step3d" hidden>
+          <div class="step">2. 3Dにする</div>
+          <div id="cutWrap">
+            <canvas id="cutCanvas" width="240" height="200"></canvas>
+            <div id="cutBusy">かたちを読みとっています…</div>
+          </div>
+          <label class="check"><input type="checkbox" id="use3d" checked> 背景を抜いて立体にする</label>
+          <div id="opt3d">
+            <label for="tol">背景の抜き具合 <span class="v" id="tolV"></span></label>
+            <input type="range" id="tol" min="6" max="32" value="16">
+            <label for="thick">厚み <span class="v" id="thickV"></span></label>
+            <input type="range" id="thick" min="4" max="26" value="12">
+          </div>
+          <div class="hint" id="cutNote"></div>
+        </div>
+
+        <div class="step">3. 作品の情報</div>
+
+        <label>作者（こども）</label>
+        <div class="kids" id="kids"></div>
+        <div class="kids-empty" id="kidsEmpty">まだ登録がありません。最初にこどもを登録してください。</div>
+        <button type="button" class="mini" id="kidAdd">＋ こどもを登録</button>
+
+        <div class="row">
+          <div>
+            <label for="ageY">制作時の年齢</label>
+            <input type="number" id="ageY" min="0" max="20" placeholder="5" required>
+          </div>
+          <div>
+            <label for="ageM">ヶ月（任意）</label>
+            <input type="number" id="ageM" min="0" max="11" placeholder="2">
+          </div>
+        </div>
+
+        <div class="hint" id="ageHint"></div>
+
+        <label for="date">制作日</label>
+        <input type="date" id="date" required>
+
+        <label for="title">作品名（子どもがつけた名前）</label>
+        <input type="text" id="title" placeholder="赤い怪獣" required>
+
+        <label for="desc">子ども自身の説明</label>
+        <textarea id="desc" placeholder="お母さんを守る怪獣"></textarea>
+        <div class="hint">本人の言葉をそのまま残してください。</div>
+
+        <button class="btn" type="submit" id="submit">世界に追加する</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- 中央：世界 -->
+  <section class="panel">
+    <div class="tabs">
+      <button data-v="world" class="on">🌍 作品世界</button>
+      <button data-v="archive">🖼 ギャラリー</button>
+      <button data-v="timeline">📖 タイムライン</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--ink-soft);align-self:center" id="worldName"></span>
+    </div>
+    <div class="view on" id="view-world">
+      <div id="world3d"></div>
+      <div id="worldEmpty"><span class="big">🌱</span>まだ誰も住んでいません<br><span style="font-size:12px">左のフォームから最初の作品を追加してみましょう</span></div>
+      <div id="worldHint">ドラッグで見まわす ・ ホイールで近づく ・ キャラクターをドラッグで移動</div>
+      <div id="worldTier"></div>
+    </div>
+    <div class="view" id="view-archive"><div id="archiveBox"></div></div>
+    <div class="view" id="view-timeline"><div class="tl" id="tl"></div></div>
+  </section>
+
+  <!-- 右：作品詳細 -->
+  <aside class="panel">
+    <h2>作品詳細</h2>
+    <div class="body" id="detail">
+      <div class="empty"><span class="big">👆</span>世界のキャラクターを<br>クリックしてください</div>
+    </div>
+  </aside>
+</div>
+
+<div class="modal" id="kidModal">
+  <div class="modal-card">
+    <h3 id="kmTitle">こどもを登録</h3>
+    <div class="hint">この情報は端末内にだけ保存されます。実名でなくてかまいません。</div>
+    <label for="kmName">表示名</label>
+    <input type="text" id="kmName" placeholder="はる" autocomplete="off" maxlength="20">
+    <label for="kmBirth">生年月日（任意）</label>
+    <input type="date" id="kmBirth">
+    <div class="hint">登録すると、制作日から「5歳2ヶ月」まで自動で計算されます。</div>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="kmCancel">やめる</button>
+      <button type="button" class="btn" id="kmSave">保存</button>
+    </div>
+    <button type="button" class="del" id="kmDelete" style="display:none">このこどもを削除する</button>
+  </div>
+</div>
+
+<div id="lightbox"><img id="lbImg" alt="元の作品"><div class="cap" id="lbCap"></div></div>
+<div id="toast"></div>
+
+<script src="modeler.js?v=5"></script>
+<script src="gallery.js?v=5"></script>
+<script src="app.js?v=5"></script>
+<script type="module" src="world3d.js?v=5"></script>
+</body>
+</html>
