@@ -4,6 +4,8 @@
 import * as THREE from './lib/three.module.js';
 
 const CHAR_H = 2.6;           // キャラクターの基準の高さ(世界単位)
+// 何を描いたかで、世界での大きさと居場所が変わる
+const ROLE_SIZE = { creature: 1, plant: 1.25, building: 1.7, vehicle: 1, sky: 1.5 };
 const PLACE_R = 0.78;         // 島の半径のうち、キャラクターが立てる範囲
 const IDLE_SPIN_MS = 7000;    // 操作をやめてから自動回転が始まるまで
 
@@ -217,6 +219,7 @@ function createWorld(container, hooks){
     const peg = new THREE.Mesh(new THREE.CylinderGeometry(.1, .14, .5, 8),
       new THREE.MeshLambertMaterial({ color: 0xb08356 }));
     peg.position.y = .25; g.add(peg);
+    const pegRef = peg;
 
     const board = new THREE.Group(); board.position.y = .5; g.add(board);
     // 作品の色は光でくすませない（原作品の色を正しく見せる）
@@ -230,9 +233,9 @@ function createWorld(container, hooks){
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(item.title || ''), transparent: true, depthWrite: false }));
     label.scale.set(2.2, .55, 1); g.add(label);
 
-    const rec = { g, board, back, art, model, mesh: null, label, shadow, aspect: 1,
+    const rec = { g, board, back, art, model, mesh: null, label, shadow, peg: pegRef, aspect: 1,
                   px: item.px, py: item.py, phase: Math.random() * Math.PI * 2,
-                  title: item.title, scale: item.scale || 1,
+                  title: item.title, scale: item.scale || 1, role: item.role || 'creature',
                   shape: item.shape || null, depth: item.depth || .12, yaw: item.yaw, spin: 0 };
     art.userData.id = item.id; back.userData.id = item.id; rec.id = item.id;
     chars.set(item.id, rec);
@@ -251,7 +254,7 @@ function createWorld(container, hooks){
   }
 
   function layoutChar(rec){
-    const h = CHAR_H * rec.scale;
+    const h = CHAR_H * rec.scale * (ROLE_SIZE[rec.role] || 1);
     const w = h * rec.aspect;
     if (rec.shape && rec.tex) { buildModelFor(rec, w, h); return; }
     rec.model.visible = false; rec.board.visible = true;
@@ -290,21 +293,41 @@ function createWorld(container, hooks){
     rec.shadow.scale.setScalar(Math.max(.7, (bb.max.x - bb.min.x) * .55));
   }
 
+  // 空の高さと回る半径。島から見上げて画面に収まる程度に留める
+  const skyHeight = () => 4 + radius * .25;
+  const skyRadius = (nx, nz) => (Math.min(1, Math.hypot(nx, nz)) * .35 + .3) * radius;
+
   function placeChar(rec){
     const nx = (rec.px - 50) / 50, nz = (rec.py - 50) / 50;
-    const len = Math.hypot(nx, nz) || 1;
-    const k = Math.min(1, PLACE_R / Math.max(len, PLACE_R)) * PLACE_R;
+    if (rec.role === 'sky'){
+      // 空のものは高いところを漂う。地面の影と杭は要らない
+      rec.orbitR = skyRadius(nx, nz);
+      if (rec.orbitA == null) rec.orbitA = Math.atan2(nz, nx);
+      rec.g.position.set(Math.cos(rec.orbitA) * rec.orbitR, skyHeight(), Math.sin(rec.orbitA) * rec.orbitR);
+      rec.shadow.visible = false; if (rec.peg) rec.peg.visible = false;
+      return;
+    }
+    if (rec.role === 'vehicle'){
+      // のりものは自分の位置を半径にして島をまわる
+      const r = Math.max(.3, Math.min(.92, Math.hypot(nx, nz))) * radius * PLACE_R;
+      rec.orbitR = r;
+      if (rec.orbitA == null) rec.orbitA = Math.atan2(nz, nx);
+      rec.g.position.set(Math.cos(rec.orbitA) * r, 0, Math.sin(rec.orbitA) * r);
+      rec.shadow.visible = true; if (rec.peg) rec.peg.visible = true;
+      return;
+    }
+    rec.shadow.visible = true; if (rec.peg) rec.peg.visible = true;
     rec.g.position.set(nx * radius * PLACE_R, 0, nz * radius * PLACE_R);
-    void k;
   }
 
   /* ---------- 世界の広がり ---------- */
   const tierOf = n => n === 0 ? 0 : n < 3 ? 1 : n < 6 ? 2 : n < 10 ? 3 : n < 20 ? 4 : 5;
   const radiusOf = n => 7 + Math.sqrt(n) * 2.5;
 
+  let ownPlants = 0, ownBuildings = 0;   // 子どもが描いた しょくぶつ／たてもの の数
   function applyTier(){
-    // 木や石は作品数に応じて増える
-    const shown = [0, 4, 9, 16, 26, 40][tier];
+    // 木や石は作品数に応じて増える。ただし子どもが描いた木が来たぶんだけ既製品は消える
+    const shown = Math.max(0, [0, 4, 9, 16, 26, 40][tier] - ownPlants * 2);
     props.forEach((p, i) => {
       if (i < shown && !p.obj){
         p.obj = p.kind === 'tree' ? makeTree() : p.kind === 'rock' ? makeRock() : makeFlower();
@@ -316,7 +339,8 @@ function createWorld(container, hooks){
     });
     pond.visible = tier >= 2;
     clouds.forEach((c, i) => { c.visible = i < [0, 2, 3, 4, 6, 7][tier]; });
-    houses.forEach((h, i) => { h.visible = tier >= 4 && i < (tier === 4 ? 2 : 5); });
+    const houseN = Math.max(0, (tier >= 4 ? (tier === 4 ? 2 : 5) : 0) - ownBuildings);
+    houses.forEach((h, i) => { h.visible = i < houseN; });
   }
 
   function layoutWorld(){
@@ -480,10 +504,14 @@ function createWorld(container, hooks){
 
     chars.forEach((rec, id) => {
       const bob = Math.sin(t * 1.5 + rec.phase) * .09;
+      moveByRole(rec, dt, t);
       if (rec.model.visible){
         // 立体は向きを持つ（既定は島の外を向く）。選ぶとゆっくり回って厚みが見える
         if (id === selectedId) rec.spin += dt * .55; else rec.spin *= .96;
-        const base = (rec.yaw != null) ? rec.yaw
+        const base = rec.role === 'vehicle' ? (-rec.orbitA + Math.PI)   // 進む向きへ
+                   : rec.role === 'sky' ? Math.atan2(camera.position.x - rec.g.position.x,
+                                                     camera.position.z - rec.g.position.z)
+                   : (rec.yaw != null) ? rec.yaw
                    : Math.atan2(rec.g.position.x, rec.g.position.z);
         rec.g.rotation.y = base + rec.spin;
         rec.model.position.y = .18 - rec.modelBottom + bob;
@@ -514,6 +542,19 @@ function createWorld(container, hooks){
     renderer.render(scene, camera);
   }
 
+  // そらのものは漂い、のりものは島をまわる
+  function moveByRole(rec, dt, t){
+    if (rec.role === 'sky' && rec.orbitR != null){
+      rec.orbitA += dt * .035;
+      rec.g.position.set(Math.cos(rec.orbitA) * rec.orbitR,
+                         skyHeight() + Math.sin(t * .6 + rec.phase) * .5,
+                         Math.sin(rec.orbitA) * rec.orbitR);
+    } else if (rec.role === 'vehicle' && rec.orbitR != null){
+      rec.orbitA += dt * (.9 / Math.max(3, rec.orbitR));
+      rec.g.position.set(Math.cos(rec.orbitA) * rec.orbitR, 0, Math.sin(rec.orbitA) * rec.orbitR);
+    }
+  }
+
   /* さんぽ: 島の上を歩く */
   function stepWalk(dt, t){
     let fwd = 0, side = 0;
@@ -540,6 +581,7 @@ function createWorld(container, hooks){
 
       // 作品はすり抜けない（立っているものとして扱う）
       chars.forEach(rec => {
+        if (rec.role === 'sky') return;      // 空にあるものは足元にない
         const dx = nx - rec.g.position.x, dz = nz - rec.g.position.z;
         const dd = Math.hypot(dx, dz), min = .8;
         if (dd < min && dd > 0.0001){ nx = rec.g.position.x + dx / dd * min; nz = rec.g.position.z + dz / dd * min; }
@@ -584,6 +626,11 @@ function createWorld(container, hooks){
         const rec = chars.get(it.id);
         if (!rec){ addChar(it); continue; }
         rec.px = it.px; rec.py = it.py;
+        const nextRole = it.role || 'creature';
+        if (rec.role !== nextRole){
+          rec.role = nextRole; rec.orbitA = null;
+          if (rec.tex) layoutChar(rec);
+        }
         const hadShape = !!rec.shape, hasShape = !!(it.shape && it.shape.length);
         if (hadShape !== hasShape || (hasShape && rec.shape !== it.shape)){
           rec.shape = hasShape ? it.shape : null;
@@ -596,10 +643,13 @@ function createWorld(container, hooks){
           rec.label.material.map = labelTexture(it.title || '');
         }
       }
+      const prevOwn = ownPlants + ownBuildings * 1000;
+      ownPlants = items.filter(i => i.role === 'plant').length;
+      ownBuildings = items.filter(i => i.role === 'building').length;
       const prevTier = tier;
       tier = tierOf(items.length);
       targetRadius = radiusOf(items.length);
-      if (tier !== prevTier) applyTier();
+      if (tier !== prevTier || prevOwn !== ownPlants + ownBuildings * 1000) applyTier();
       layoutWorld();
       // 作品が入った最初の同期で画角を決める。読み込み直後の空の同期で決めてしまうと
       // 島だけの大きさに合わせた寄りすぎのカメラのままになる
@@ -643,20 +693,28 @@ function createWorld(container, hooks){
     resize,
     // 開発用: 描画を待たずに歩行を進める（島の縁や作品との当たりを確かめる用）
     simulate(steps, dt){
+      const d = dt || 1 / 60;
+      for (let i = 0; i < (steps || 1); i++){
+        chars.forEach(rec => moveByRole(rec, d, i * d));
+        if (mode === 'walk') stepWalk(d, 0);
+      }
       if (mode !== 'walk') return null;
-      for (let i = 0; i < (steps || 1); i++) stepWalk(dt || 1 / 60, 0);
       return { x: Math.round(walker.x * 100) / 100, z: Math.round(walker.z * 100) / 100,
                r: Math.round(Math.hypot(walker.x, walker.z) * 100) / 100 };
     },
     // 開発用: キャラクターの立体化の状態を覗く
     inspect(){
       const out = [];
-      chars.forEach((rec, id) => out.push({ id, title: rec.title, solid: rec.model.visible,
+      chars.forEach((rec, id) => out.push({ id, title: rec.title, role: rec.role, solid: rec.model.visible,
+        gy: Math.round(rec.g.position.y * 10) / 10,
         pos: [Math.round(rec.g.position.x*10)/10, Math.round(rec.g.position.z*10)/10],
         size: rec.mesh ? [Math.round((rec.mesh.geometry.boundingBox.max.x-rec.mesh.geometry.boundingBox.min.x)*10)/10,
                           Math.round((rec.mesh.geometry.boundingBox.max.y-rec.mesh.geometry.boundingBox.min.y)*10)/10] : null,
         y: Math.round(rec.model.position.y*10)/10, hasTex: !!rec.tex, shape: rec.shape ? rec.shape.length : 0 }));
       return { radius: Math.round(radius*10)/10, mode: mode,
+               props: { trees: props.filter(p => p.obj && p.obj.visible).length,
+                        houses: houses.filter(h => h.visible).length,
+                        ownPlants, ownBuildings },
                camera: [camera.position.x, camera.position.y, camera.position.z].map(v => Math.round(v*100)/100),
                walker: { x: Math.round(walker.x*100)/100, z: Math.round(walker.z*100)/100,
                          yaw: Math.round(walker.yaw*100)/100, eye: walker.eye },

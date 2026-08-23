@@ -18,6 +18,19 @@ const CHILDREN_KEY='kw_children', SELECTED_KEY='kw_selected_child';
 const loadChildren=()=>{try{return JSON.parse(localStorage.getItem(CHILDREN_KEY))||[];}catch(e){return [];}};
 const saveChildren=c=>localStorage.setItem(CHILDREN_KEY,JSON.stringify(c));
 
+/* ---------------- 作品の役割 ---------------- */
+// 何を描いたかで、世界での居場所が変わる。仕様書 §15 Phase 3 の入口。
+// 既製の木・家は、子どもが描いた しょくぶつ・たてもの が来たぶんだけ消える。
+const ROLES = [
+  { id:'creature', label:'いきもの',   emoji:'🐾', hint:'島の上に立って住みます' },
+  { id:'plant',    label:'しょくぶつ', emoji:'🌳', hint:'島に生えて、もとからある木と入れかわります' },
+  { id:'building', label:'たてもの',   emoji:'🏠', hint:'島に建って、もとからある家と入れかわります' },
+  { id:'vehicle',  label:'のりもの',   emoji:'🚙', hint:'島のまわりをゆっくり走ります' },
+  { id:'sky',      label:'そら',       emoji:'☀️', hint:'空に浮かびます' },
+];
+const roleOf = a => (a && a.role && ROLES.some(r=>r.id===a.role)) ? a.role : 'creature';
+const roleDef = id => ROLES.find(r=>r.id===id) || ROLES[0];
+
 /* ---------------- state ---------------- */
 let artworks=[], selectedId=null;
 let children=[], selectedChildId=null, editingChildId=null;

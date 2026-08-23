@@ -13,7 +13,7 @@ let world3d=null, lastTier=null;
 function worldPayload(){
   return artworks.map(a=>{
     const solid=!!(a.cutout && a.shape && a.shape.length);
-    return {id:a.id, url:urlOf(a, solid?'cutout':'display'), title:a.title,
+    return {id:a.id, url:urlOf(a, solid?'cutout':'display'), title:a.title, role:roleOf(a),
       px:fin(a.position_x,50), py:fin(a.position_y,55), scale:a.scale||1,
       shape:solid?a.shape:null, depth:a.depth||.12, yaw:(typeof a.rotation_y==='number')?a.rotation_y:undefined};
   });
@@ -79,9 +79,15 @@ function renderDetail(){
   d.innerHTML=
     '<img class="d-img" src="'+urlOf(a,'display')+'" alt="'+esc(a.title)+'">'+
     '<div class="d-title">'+esc(a.title)+'</div>'+
-    '<div class="d-meta">'+esc(nameOf(a))+'・'+ageText(a)+'のとき</div>'+
+    '<div class="d-meta">'+roleDef(roleOf(a)).emoji+esc(roleDef(roleOf(a)).label)+
+      '・'+esc(nameOf(a))+'・'+ageText(a)+'のとき</div>'+
     '<div class="d-meta">'+dateText(a.created_at)+' に制作</div>'+
     (a.description?'<p class="d-quote"><span class="cap">本人の説明</span>「'+esc(a.description)+'」</p>':'')+
+    '<div class="d-sec">世界での居場所</div>'+
+    '<div class="roles small" id="dRoles">'+ROLES.map(r=>
+      '<button type="button" class="role'+(r.id===roleOf(a)?' on':'')+'" data-role="'+r.id+'">'+
+      '<span class="e">'+r.emoji+'</span>'+esc(r.label)+'</button>').join('')+'</div>'+
+    '<div class="hint" id="dRoleHint">'+esc(roleDef(roleOf(a)).hint)+'</div>'+
     '<button class="btn ghost" id="btnOriginal">🖼️ 元の作品を見る</button>'+
     '<div class="d-sec">作品の記録</div>'+
     '<div class="rec">'+
@@ -95,6 +101,14 @@ function renderDetail(){
     $('#lbCap').textContent=a.title+'（元の作品）／ '+nameOf(a)+'・'+ageText(a)+'・'+dateText(a.created_at);
     $('#lightbox').classList.add('on');
   };
+  $('#dRoles').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-role]'); if(!b) return;
+    const role=b.dataset.role;
+    if(role===roleOf(a)) return;
+    a.role=role; await idbPut(a);
+    render();
+    toast(roleDef(role).emoji+roleDef(role).label+'にしました');
+  });
   $('#btnSticker').onclick=()=>toast('ステッカー作成機能は準備中です');
   $('#btnDel').onclick=async()=>{
     if(!confirm('「'+a.title+'」を削除します。元の画像も消えて元に戻せません。よろしいですか？')) return;

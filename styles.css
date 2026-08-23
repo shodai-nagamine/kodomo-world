@@ -130,6 +130,18 @@ textarea{resize:vertical;min-height:62px}
 #opt3d input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 4px}
 #opt3d.off{opacity:.4;pointer-events:none}
 
+/* 役割（これはなに？） */
+.roles{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
+.role{
+  display:flex;align-items:center;gap:5px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  border-radius:999px;padding:6px 12px;font-size:12px;line-height:1;
+}
+.role .e{font-size:14px}
+.role:hover{border-color:var(--accent)}
+.role.on{background:var(--accent-soft);border-color:#f7d3b6;color:#a54f18;font-weight:700}
+.roles.small .role{padding:4px 9px;font-size:11px}
+.roles.small .role .e{font-size:12px}
+
 /* children */
 .kids{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
 .kid{display:flex;align-items:center;gap:7px;padding:4px 6px 4px 4px;border:1px solid var(--line);

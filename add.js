@@ -15,12 +15,26 @@ function renderKids(){
   }).join('');
 }
 
+/* ---------------- これはなに？（世界での居場所） ---------------- */
+let pendingRole='creature';
+function renderRoles(){
+  $('#roles').innerHTML=ROLES.map(r=>
+    '<button type="button" class="role'+(r.id===pendingRole?' on':'')+'" data-role="'+r.id+'">'+
+    '<span class="e">'+r.emoji+'</span>'+esc(r.label)+'</button>').join('');
+  $('#roleHint').textContent=roleDef(pendingRole).hint;
+}
+$('#roles').addEventListener('click',e=>{
+  const b=e.target.closest('[data-role]'); if(!b) return;
+  pendingRole=b.dataset.role; renderRoles();
+});
+
 /* ---------------- 追加できたときの表示 ---------------- */
 function showDone(a){
   // 立体になったものは切り抜きを見せる（何ができたのかが分かる）
   $('#doneImg').src=urlOf(a, a.cutout?'cutout':'display');
   $('#doneTitle').textContent=a.title;
-  $('#doneMeta').textContent=nameOf(a)+'・'+ageText(a)+'・'+dateText(a.created_at)+
+  const rd=roleDef(roleOf(a));
+  $('#doneMeta').textContent=rd.emoji+rd.label+'・'+nameOf(a)+'・'+ageText(a)+
     (a.appearance_type==='extruded_cutout'?'・立体になりました':'');
   $('#doneSee').href='index.html?focus='+encodeURIComponent(a.id);
   $('#done').hidden=false;
@@ -134,7 +148,7 @@ $('#thick').oninput=stepUI;
 function selectChild(id){
   selectedChildId=id;
   localStorage.setItem(SELECTED_KEY,id||'');
-  renderKids(); syncAge();
+  renderKids(); renderRoles(); syncAge();
 }
 function syncAge(){
   const c=childOf(selectedChildId), dv=$('#date').value, hint=$('#ageHint');
@@ -249,6 +263,7 @@ $('#form').onsubmit=async e=>{
       created_at:$('#date').value,
       uploaded_at:new Date().toISOString(),
       position_x:x, position_y:y, scale:0.85+Math.random()*0.35,
+      role:pendingRole,
       appearance_type:solid?'extruded_cutout':'original_image',
       original:pendingFile, display:display,
       // 派生物（背景除去・立体の形）。原作品は必ず original に無加工で残す
@@ -283,6 +298,6 @@ $('#doneMore').onclick=closeDone;
 (async function(){
   $('#date').value=new Date().toISOString().slice(0,10);
   await kwLoad();
-  renderKids(); syncAge();
+  renderKids(); renderRoles(); syncAge();
   if(!children.length) openKidModal(null);   // 最初の一回はこども登録から
 })();
