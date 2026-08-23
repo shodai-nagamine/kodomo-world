@@ -198,6 +198,11 @@ function createWorld(container, hooks){
   const loader = new THREE.TextureLoader();
 
   let radius = 7, targetRadius = 7, tier = 0, firstSync = true;
+  // 'orbit' = 島を外から眺める / 'walk' = 島の上を歩く
+  let mode = 'orbit';
+  const walker = { x: 0, z: 0, yaw: 0, pitch: 0, eye: 1.62, bob: 0 };
+  const keys = new Set();
+  let touchMove = null, touchLook = null;
   let selectedId = null;
   const cam = { theta: Math.PI * .25, phi: 1.16, dist: 18, target: new THREE.Vector3(0, 1.6, 0) };
   let lastInput = performance.now();
@@ -335,7 +340,7 @@ function createWorld(container, hooks){
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  let mode = null, downAt = null, dragRec = null, moved = false;
+  let downAt = null, dragRec = null, moved = false;
 
   function toNdc(e){
     const r = renderer.domElement.getBoundingClientRect();
@@ -357,28 +362,64 @@ function createWorld(container, hooks){
   }
 
   const dom = renderer.domElement;
+
+  const MOVE_KEYS = { KeyW:1, KeyA:1, KeyS:1, KeyD:1, ArrowUp:1, ArrowDown:1, ArrowLeft:1, ArrowRight:1, ShiftLeft:1, ShiftRight:1 };
+  window.addEventListener('keydown', e => {
+    if (mode !== 'walk' || !MOVE_KEYS[e.code]) return;
+    const t = e.target;
+    // 入力中や、ギャラリー等の別タブを見ているときは矢印キーを奪わない
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+    if (!dom.offsetParent) return;
+    keys.add(e.code); e.preventDefault();
+  });
+  window.addEventListener('keyup', e => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+
+  let act = null;                 // 'char'（キャラを動かす）/ 'orbit'（視点回し）/ 'look'（さんぽ中の見回し）/ 'move'（さんぽ中の移動）
   dom.addEventListener('pointerdown', e => {
     lastInput = performance.now();
     dom.setPointerCapture && dom.setPointerCapture(e.pointerId);
-    downAt = { x: e.clientX, y: e.clientY, theta: cam.theta, phi: cam.phi };
     moved = false;
+    if (mode === 'walk'){
+      const r = dom.getBoundingClientRect();
+      const left = (e.clientX - r.left) < r.width * 0.4;
+      // 画面の左寄りを引くと移動、右寄りを引くと見回し（指でも遊べるように）
+      act = left ? 'move' : 'look';
+      touchLook = { x: e.clientX, y: e.clientY, yaw: walker.yaw, pitch: walker.pitch };
+      touchMove = left ? { x: e.clientX, y: e.clientY, dx: 0, dz: 0 } : null;
+      downAt = { x: e.clientX, y: e.clientY };
+      return;
+    }
+    downAt = { x: e.clientX, y: e.clientY, theta: cam.theta, phi: cam.phi };
     const id = pick(e);
-    if (id){ mode = 'char'; dragRec = chars.get(id); dragRec._id = id; dom.style.cursor = 'grabbing'; }
-    else { mode = 'orbit'; dom.style.cursor = 'grabbing'; }
+    if (id){ act = 'char'; dragRec = chars.get(id); dragRec._id = id; dom.style.cursor = 'grabbing'; }
+    else { act = 'orbit'; dom.style.cursor = 'grabbing'; }
   });
   dom.addEventListener('pointermove', e => {
-    if (!mode){
-      dom.style.cursor = pick(e) ? 'pointer' : 'grab';
+    if (!act){
+      if (mode !== 'walk') dom.style.cursor = pick(e) ? 'pointer' : 'grab';
       return;
     }
     lastInput = performance.now();
     const dx = e.clientX - downAt.x, dy = e.clientY - downAt.y;
     if (!moved && Math.hypot(dx, dy) < 5) return;
     moved = true;
-    if (mode === 'orbit'){
+    if (act === 'look'){
+      walker.yaw = touchLook.yaw - dx * .005;
+      walker.pitch = Math.max(-.9, Math.min(.7, touchLook.pitch - dy * .004));
+      return;
+    }
+    if (act === 'move'){
+      // 引いた向きと量で歩く（上に引くと前へ）
+      const k = .012;
+      touchMove.dz = Math.max(-1, Math.min(1, -dy * k));
+      touchMove.dx = Math.max(-1, Math.min(1, dx * k));
+      return;
+    }
+    if (act === 'orbit'){
       cam.theta = downAt.theta - dx * .006;
       cam.phi = Math.max(.22, Math.min(1.38, downAt.phi - dy * .005));
-    } else if (dragRec){
+    } else if (act === 'char' && dragRec){
       const p = groundPoint(e);
       if (p){
         const lim = radius * PLACE_R;
@@ -391,21 +432,24 @@ function createWorld(container, hooks){
     }
   });
   function endPointer(e){
-    if (!mode) return;
+    if (!act) return;
     lastInput = performance.now();
-    const m = mode, rec = dragRec;
-    mode = null; dragRec = null; dom.style.cursor = 'grab';
+    const m = act, rec = dragRec;
+    act = null; dragRec = null; touchMove = null;
+    dom.style.cursor = mode === 'walk' ? 'default' : 'grab';
     if (m === 'char' && rec){
       if (!moved) hooks.onSelect && hooks.onSelect(rec._id);
       else hooks.onMove && hooks.onMove(rec._id, rec.px, rec.py);
-    } else if (m === 'orbit' && !moved){
-      hooks.onSelect && hooks.onSelect(null);
+    } else if (!moved){
+      // 動かさずに離したのはクリック。さんぽ中も作品を選べる
+      const id = pick(e);
+      hooks.onSelect && hooks.onSelect(id || null);
     }
-    void e;
   }
   dom.addEventListener('pointerup', endPointer);
   dom.addEventListener('pointercancel', endPointer);
   dom.addEventListener('wheel', e => {
+    if (mode === 'walk') return;
     e.preventDefault(); lastInput = performance.now();
     cam.dist = Math.max(radius * .55, Math.min(radius * 4.2, cam.dist * (1 + Math.sign(e.deltaY) * .12)));
   }, { passive: false });
@@ -421,15 +465,18 @@ function createWorld(container, hooks){
       radius += (targetRadius - radius) * Math.min(1, dt * 1.8);
       layoutWorld();
     }
-    if (now - lastInput > IDLE_SPIN_MS) cam.theta += dt * .045;
-
-    cam.dist = Math.max(radius * .55, Math.min(radius * 4.2, cam.dist));
-    cam.target.set(0, Math.min(2.4, radius * .18), 0);
-    camera.position.set(
-      cam.target.x + cam.dist * Math.sin(cam.phi) * Math.cos(cam.theta),
-      cam.target.y + cam.dist * Math.cos(cam.phi),
-      cam.target.z + cam.dist * Math.sin(cam.phi) * Math.sin(cam.theta));
-    camera.lookAt(cam.target);
+    if (mode === 'walk'){
+      stepWalk(dt, t);
+    } else {
+      if (now - lastInput > IDLE_SPIN_MS) cam.theta += dt * .045;
+      cam.dist = Math.max(radius * .55, Math.min(radius * 4.2, cam.dist));
+      cam.target.set(0, Math.min(2.4, radius * .18), 0);
+      camera.position.set(
+        cam.target.x + cam.dist * Math.sin(cam.phi) * Math.cos(cam.theta),
+        cam.target.y + cam.dist * Math.cos(cam.phi),
+        cam.target.z + cam.dist * Math.sin(cam.phi) * Math.sin(cam.theta));
+      camera.lookAt(cam.target);
+    }
 
     chars.forEach((rec, id) => {
       const bob = Math.sin(t * 1.5 + rec.phase) * .09;
@@ -465,6 +512,51 @@ function createWorld(container, hooks){
     } else ring.visible = false;
 
     renderer.render(scene, camera);
+  }
+
+  /* さんぽ: 島の上を歩く */
+  function stepWalk(dt, t){
+    let fwd = 0, side = 0;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) fwd += 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) fwd -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) side += 1;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) side -= 1;
+    if (touchMove){ fwd += touchMove.dz; side += touchMove.dx; }
+
+    const run = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    const speed = (run ? 6.4 : 3.2) * Math.min(1, Math.hypot(fwd, side) || 0);
+    if (speed > 0){
+      const len = Math.hypot(fwd, side) || 1;
+      const f = fwd / len, r = side / len;
+      const sin = Math.sin(walker.yaw), cos = Math.cos(walker.yaw);
+      // yaw=0 で -Z を向く。前進は視線方向、横は右手方向
+      let nx = walker.x + (-sin * f + cos * r) * speed * dt;
+      let nz = walker.z + (-cos * f - sin * r) * speed * dt;
+
+      // 海に落ちないよう島の内側に留める
+      const lim = radius * .96;
+      const d = Math.hypot(nx, nz);
+      if (d > lim){ nx = nx / d * lim; nz = nz / d * lim; }
+
+      // 作品はすり抜けない（立っているものとして扱う）
+      chars.forEach(rec => {
+        const dx = nx - rec.g.position.x, dz = nz - rec.g.position.z;
+        const dd = Math.hypot(dx, dz), min = .8;
+        if (dd < min && dd > 0.0001){ nx = rec.g.position.x + dx / dd * min; nz = rec.g.position.z + dz / dd * min; }
+      });
+      walker.x = nx; walker.z = nz;
+      walker.bob += dt * (run ? 11 : 7.5);
+      lastInput = performance.now();
+    }
+
+    const bob = Math.sin(walker.bob) * .045;
+    camera.position.set(walker.x, walker.eye + bob, walker.z);
+    const cp = Math.cos(walker.pitch);
+    camera.lookAt(
+      walker.x - Math.sin(walker.yaw) * cp,
+      walker.eye + bob + Math.sin(walker.pitch),
+      walker.z - Math.cos(walker.yaw) * cp);
+    void t;
   }
 
   function resize(){
@@ -521,6 +613,27 @@ function createWorld(container, hooks){
       return { tier, prevTier, radius: targetRadius, count: items.length };
     },
     select(id){ selectedId = id; },
+    setMode(next){
+      if (next === mode) return mode;
+      if (next === 'walk'){
+        // いま見ている向きから歩き出す（島の縁に立って中心を向く）
+        const lim = radius * .9;
+        walker.x = Math.sin(cam.theta) * 0 + Math.cos(cam.theta) * lim;
+        walker.z = Math.sin(cam.theta) * lim;
+        // yaw=0 は -Z 向き。中心(0,0)を向くには atan2(x, z)
+        walker.yaw = Math.atan2(walker.x, walker.z);
+        walker.pitch = -.06; walker.bob = 0;
+        mode = 'walk';
+        dom.style.cursor = 'default';
+      } else {
+        mode = 'orbit';
+        keys.clear(); touchMove = null;
+        dom.style.cursor = 'grab';
+        lastInput = performance.now();
+      }
+      return mode;
+    },
+    getMode(){ return mode; },
     focus(id){
       const rec = chars.get(id); if (!rec) return;
       cam.theta = Math.atan2(rec.g.position.z, rec.g.position.x) - .35;
@@ -528,6 +641,13 @@ function createWorld(container, hooks){
       lastInput = performance.now();
     },
     resize,
+    // 開発用: 描画を待たずに歩行を進める（島の縁や作品との当たりを確かめる用）
+    simulate(steps, dt){
+      if (mode !== 'walk') return null;
+      for (let i = 0; i < (steps || 1); i++) stepWalk(dt || 1 / 60, 0);
+      return { x: Math.round(walker.x * 100) / 100, z: Math.round(walker.z * 100) / 100,
+               r: Math.round(Math.hypot(walker.x, walker.z) * 100) / 100 };
+    },
     // 開発用: キャラクターの立体化の状態を覗く
     inspect(){
       const out = [];
@@ -536,7 +656,11 @@ function createWorld(container, hooks){
         size: rec.mesh ? [Math.round((rec.mesh.geometry.boundingBox.max.x-rec.mesh.geometry.boundingBox.min.x)*10)/10,
                           Math.round((rec.mesh.geometry.boundingBox.max.y-rec.mesh.geometry.boundingBox.min.y)*10)/10] : null,
         y: Math.round(rec.model.position.y*10)/10, hasTex: !!rec.tex, shape: rec.shape ? rec.shape.length : 0 }));
-      return { radius: Math.round(radius*10)/10, chars: out };
+      return { radius: Math.round(radius*10)/10, mode: mode,
+               camera: [camera.position.x, camera.position.y, camera.position.z].map(v => Math.round(v*100)/100),
+               walker: { x: Math.round(walker.x*100)/100, z: Math.round(walker.z*100)/100,
+                         yaw: Math.round(walker.yaw*100)/100, eye: walker.eye },
+               chars: out };
     },
     dispose(){ cancelAnimationFrame(raf); renderer.dispose(); }
   };

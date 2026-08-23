@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>🌱 KODOMO WORLD</title>
-<link rel="stylesheet" href="styles.css?v=10">
-<link rel="stylesheet" href="gallery.css?v=10">
+<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="gallery.css?v=14">
 </head>
 <body>
 <header>
@@ -23,7 +23,8 @@
       <button data-v="world" class="on">🌍 作品世界</button>
       <button data-v="archive">🖼 ギャラリー</button>
       <button data-v="timeline">📖 タイムライン</button>
-      <span style="margin-left:auto;font-size:11px;color:var(--ink-soft);align-self:center" id="worldName"></span>
+      <button id="modeBtn" class="mode" type="button" style="margin-left:auto">🚶 さんぽする</button>
+      <span style="font-size:11px;color:var(--ink-soft);align-self:center;margin-left:10px" id="worldName"></span>
     </div>
     <div class="view on" id="view-world">
       <div id="world3d"></div>
@@ -51,9 +52,9 @@
 <div id="lightbox"><img id="lbImg" alt="元の作品"><div class="cap" id="lbCap"></div></div>
 <div id="toast"></div>
 
-<script src="gallery.js?v=10"></script>
-<script src="core.js?v=10"></script>
-<script src="world.js?v=10"></script>
-<script type="module" src="world3d.js?v=10"></script>
+<script src="gallery.js?v=14"></script>
+<script src="core.js?v=14"></script>
+<script src="world.js?v=14"></script>
+<script type="module" src="world3d.js?v=14"></script>
 </body>
 </html>

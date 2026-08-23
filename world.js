@@ -120,6 +120,23 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){$('#lightbox').classList.remove('on');closeKidModal();}
 });
 
+/* ながめる / さんぽ の切り替え */
+const HINT={
+  orbit:'ドラッグで見まわす ・ ホイールで近づく ・ キャラクターをドラッグで移動',
+  walk:'WASD か 矢印キーで歩く（Shiftで走る） ・ ドラッグで見まわす ・ 作品をクリックで見る'
+};
+function setMode(next){
+  if(!world3d) return;
+  const m=world3d.setMode(next);
+  $('#modeBtn').textContent = m==='walk' ? '👀 ながめる' : '🚶 さんぽする';
+  $('#modeBtn').classList.toggle('on', m==='walk');
+  $('#worldHint').textContent = HINT[m];
+}
+$('#modeBtn').onclick=()=>setMode(world3d && world3d.getMode()==='walk' ? 'orbit' : 'walk');
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && world3d && world3d.getMode()==='walk') setMode('orbit');
+});
+
 /* 3Dワールドからのクリック・移動 */
 window.__kwWorldReady=api=>{
   world3d=api;

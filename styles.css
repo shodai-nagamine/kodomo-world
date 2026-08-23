@@ -184,6 +184,12 @@ textarea{resize:vertical;min-height:62px}
   background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:999px;
   padding:3px 14px;font-size:11px;color:var(--ink-soft);pointer-events:none;white-space:nowrap;
 }
+.tabs .mode{
+  border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;
+  padding:5px 14px;font-size:12px;font-weight:700;white-space:nowrap;
+}
+.tabs .mode:hover{border-color:var(--accent);color:var(--accent)}
+.tabs .mode.on{background:var(--green);border-color:var(--green);color:#fff}
 #worldTier{
   position:absolute;left:50%;top:16px;transform:translateX(-50%) translateY(-8px);
   background:rgba(255,255,255,.95);border:1px solid #f7d3b6;color:#b4571c;font-weight:700;
